@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteTour = exports.updateTour = exports.createTour = exports.getTour = exports.getAllTours = exports.checkID = void 0;
+exports.deleteTour = exports.updateTour = exports.createTour = exports.getTour = exports.getAllTours = exports.checkBody = exports.checkID = void 0;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const tours = JSON.parse(fs_1.default.readFileSync(path_1.default.join(__dirname, '..', '..', '/dev-data/data/tours-simple.json'), 'utf-8'));
@@ -18,6 +18,15 @@ const checkID = (req, res, next) => {
     next();
 };
 exports.checkID = checkID;
+const checkBody = (req, res, next) => {
+    if (!req.body.name || !req.body.price) {
+        return res
+            .status(400)
+            .json({ status: 'fail', message: 'Missing name or price' });
+    }
+    next();
+};
+exports.checkBody = checkBody;
 const getAllTours = (req, res) => {
     res
         .status(200)
