@@ -3,10 +3,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteTour = exports.updateTour = exports.createTour = exports.getTour = exports.getAllTours = void 0;
+exports.deleteTour = exports.updateTour = exports.createTour = exports.getTour = exports.getAllTours = exports.checkID = void 0;
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const tours = JSON.parse(fs_1.default.readFileSync(path_1.default.join(__dirname, '..', '..', '/dev-data/data/tours-simple.json'), 'utf-8'));
+const checkID = (req, res, next) => {
+    const tour = tours.find((tour) => tour.id === +req.params.id);
+    if (!tour) {
+        return res.status(404).json({
+            status: 'fail',
+            message: `Unable to find tour with id: ${req.params.id}`,
+        });
+    }
+    next();
+};
+exports.checkID = checkID;
 const getAllTours = (req, res) => {
     res
         .status(200)
@@ -15,12 +26,6 @@ const getAllTours = (req, res) => {
 exports.getAllTours = getAllTours;
 const getTour = (req, res) => {
     const tour = tours.find((tour) => tour.id === +req.params.id);
-    if (!tour) {
-        return res.status(404).json({
-            status: 'fail',
-            message: `Unable to find tour with id: ${req.params.id}`,
-        });
-    }
     res.status(200).json({ status: 'success', data: { tour } });
 };
 exports.getTour = getTour;
@@ -40,25 +45,12 @@ const createTour = (req, res) => {
 exports.createTour = createTour;
 const updateTour = (req, res) => {
     const tour = tours.find((tour) => tour.id === +req.params.id);
-    if (!tour) {
-        return res.status(404).json({
-            status: 'fail',
-            message: `Unable to find tour with id: ${req.params.id}`,
-        });
-    }
     res
         .status(200)
         .json({ status: 'success', data: { tour: '<Updated tour here...' } });
 };
 exports.updateTour = updateTour;
 const deleteTour = (req, res) => {
-    const tour = tours.find((tour) => tour.id === +req.params.id);
-    if (!tour) {
-        return res.status(404).json({
-            status: 'fail',
-            message: `Unable to find tour with id: ${req.params.id}`,
-        });
-    }
     res.status(204).json({ status: 'success', data: null });
 };
 exports.deleteTour = deleteTour;
