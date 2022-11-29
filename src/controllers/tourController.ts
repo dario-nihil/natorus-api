@@ -30,7 +30,7 @@ export const createTour = async (req: Request, res: Response) => {
 
     res.status(201).json({ status: 'success', data: { newTour } });
   } catch (err) {
-    res.status(400).json({ status: 'fail', message: 'Invalid data sent!' });
+    res.status(400).json({ status: 'fail', message: err });
   }
 };
 

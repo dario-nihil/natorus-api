@@ -42,7 +42,7 @@ const createTour = (req, res) => __awaiter(void 0, void 0, void 0, function* () 
         res.status(201).json({ status: 'success', data: { newTour } });
     }
     catch (err) {
-        res.status(400).json({ status: 'fail', message: 'Invalid data sent!' });
+        res.status(400).json({ status: 'fail', message: err });
     }
 });
 exports.createTour = createTour;
