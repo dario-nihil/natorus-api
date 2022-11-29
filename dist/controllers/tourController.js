@@ -1,62 +1,45 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteTour = exports.updateTour = exports.createTour = exports.getTour = exports.getAllTours = exports.checkBody = exports.checkID = void 0;
-const fs_1 = __importDefault(require("fs"));
-const path_1 = __importDefault(require("path"));
-const tours = JSON.parse(fs_1.default.readFileSync(path_1.default.join(__dirname, '..', '..', '/dev-data/data/tours-simple.json'), 'utf-8'));
-const checkID = (req, res, next) => {
-    const tour = tours.find((tour) => tour.id === +req.params.id);
-    if (!tour) {
-        return res.status(404).json({
-            status: 'fail',
-            message: `Unable to find tour with id: ${req.params.id}`,
-        });
-    }
-    next();
-};
-exports.checkID = checkID;
-const checkBody = (req, res, next) => {
-    if (!req.body.name || !req.body.price) {
-        return res
-            .status(400)
-            .json({ status: 'fail', message: 'Missing name or price' });
-    }
-    next();
-};
-exports.checkBody = checkBody;
+exports.deleteTour = exports.updateTour = exports.createTour = exports.getTour = exports.getAllTours = void 0;
+const tourModel_1 = __importDefault(require("../models/tourModel"));
 const getAllTours = (req, res) => {
-    res
-        .status(200)
-        .json({ status: 'success', data: { tours }, results: tours.length });
+    // res
+    //   .status(200)
+    //   .json({ status: 'success', data: { tours }, results: tours.length });
 };
 exports.getAllTours = getAllTours;
 const getTour = (req, res) => {
-    const tour = tours.find((tour) => tour.id === +req.params.id);
-    res.status(200).json({ status: 'success', data: { tour } });
+    // const tour = tours.find((tour) => tour.id === +req.params.id);
+    // res.status(200).json({ status: 'success', data: { tour } });
 };
 exports.getTour = getTour;
-const createTour = (req, res) => {
-    const newId = tours[tours.length - 1].id + 1;
-    const newTour = Object.assign({ id: newId }, req.body);
-    tours.push(newTour);
-    fs_1.default.writeFile(path_1.default.join(__dirname, '..', '/dev-data/data/tours-simple.json'), JSON.stringify(tours), (err) => {
-        if (err) {
-            return res
-                .status(500)
-                .json({ status: 'error', message: 'Internal Server Error' });
-        }
-        res.status(201).json({ status: 'success', data: { newTour } });
-    });
-};
+const createTour = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const newTour = yield tourModel_1.default.create(req.body);
+        res.status(200).json({ status: 'success', data: { newTour } });
+    }
+    catch (err) {
+        res.status(400).json({ status: 'fail', message: 'Invalid data sent!' });
+    }
+});
 exports.createTour = createTour;
 const updateTour = (req, res) => {
-    const tour = tours.find((tour) => tour.id === +req.params.id);
-    res
-        .status(200)
-        .json({ status: 'success', data: { tour: '<Updated tour here...' } });
+    // const tour = tours.find((tour) => tour.id === +req.params.id);
+    // res
+    //   .status(200)
+    //   .json({ status: 'success', data: { tour: '<Updated tour here...' } });
 };
 exports.updateTour = updateTour;
 const deleteTour = (req, res) => {
