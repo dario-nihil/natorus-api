@@ -11,7 +11,7 @@ const tourSchema = new mongoose.Schema({
     default: 4.5,
   },
   price: {
-    type: String,
+    type: Number,
     required: [true, 'A tour must have a price'],
   },
 });

@@ -14,35 +14,58 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteTour = exports.updateTour = exports.createTour = exports.getTour = exports.getAllTours = void 0;
 const tourModel_1 = __importDefault(require("../models/tourModel"));
-const getAllTours = (req, res) => {
-    // res
-    //   .status(200)
-    //   .json({ status: 'success', data: { tours }, results: tours.length });
-};
+const getAllTours = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const tours = yield tourModel_1.default.find();
+        res
+            .status(200)
+            .json({ status: 'success', data: { tours }, results: tours.length });
+    }
+    catch (err) {
+        res.status(400).json({ status: 'fail', message: err });
+    }
+});
 exports.getAllTours = getAllTours;
-const getTour = (req, res) => {
-    // const tour = tours.find((tour) => tour.id === +req.params.id);
-    // res.status(200).json({ status: 'success', data: { tour } });
-};
+const getTour = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const tour = yield tourModel_1.default.findById(req.params.id);
+        res.status(200).json({ status: 'success', data: { tour } });
+    }
+    catch (err) {
+        res.status(400).json({ status: 'fail', message: err });
+    }
+});
 exports.getTour = getTour;
 const createTour = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const newTour = yield tourModel_1.default.create(req.body);
-        res.status(200).json({ status: 'success', data: { newTour } });
+        res.status(201).json({ status: 'success', data: { newTour } });
     }
     catch (err) {
         res.status(400).json({ status: 'fail', message: 'Invalid data sent!' });
     }
 });
 exports.createTour = createTour;
-const updateTour = (req, res) => {
-    // const tour = tours.find((tour) => tour.id === +req.params.id);
-    // res
-    //   .status(200)
-    //   .json({ status: 'success', data: { tour: '<Updated tour here...' } });
-};
+const updateTour = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const tour = yield tourModel_1.default.findByIdAndUpdate(req.params.id, req.body, {
+            new: true,
+            runValidators: true,
+        });
+        res.status(200).json({ status: 'success', data: { tour } });
+    }
+    catch (err) {
+        res.status(400).json({ status: 'fail', message: err });
+    }
+});
 exports.updateTour = updateTour;
-const deleteTour = (req, res) => {
-    res.status(204).json({ status: 'success', data: null });
-};
+const deleteTour = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        yield tourModel_1.default.findByIdAndDelete(req.params.id);
+        res.status(204).json({ status: 'success' });
+    }
+    catch (err) {
+        res.status(400).json({ status: 'fail', message: err });
+    }
+});
 exports.deleteTour = deleteTour;
