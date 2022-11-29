@@ -13,8 +13,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteTour = exports.updateTour = exports.createTour = exports.getTour = exports.getAllTours = exports.aliasTopTours = void 0;
+const apiFeatures_1 = __importDefault(require("../utils/apiFeatures"));
 const tourModel_1 = __importDefault(require("../models/tourModel"));
-const aliasTopTours = (req, res, next) => {
+const aliasTopTours = (req, _res, next) => {
     req.query.limit = '5';
     req.query.sort = '-ratingsAverage,price';
     req.query.fields = 'name,price,ratingsAverage,summary,difficulty';
@@ -22,48 +23,13 @@ const aliasTopTours = (req, res, next) => {
 };
 exports.aliasTopTours = aliasTopTours;
 const getAllTours = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const queryObj = Object.assign({}, req.query);
-    const excludedFields = ['page', 'sort', 'limit', 'fields'];
-    excludedFields.forEach((elm) => delete queryObj[elm]);
-    // const { page, sort, limit, fields, ...queryObj} = req.query;
-    // This is a more dynamic solution
-    // const filteredObj = Object.keys(queryObj)
-    //   .filter((query) => !excludedFields.includes(query))
-    //   .reduce<{ [x: string]: string | any }>((obj, key) => {
-    //     obj[key] = queryObj[key];
-    //     return obj;
-    //   }, {});
     try {
-        let queryStr = JSON.stringify(queryObj);
-        queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
-        let query = tourModel_1.default.find(JSON.parse(queryStr));
-        // Sorting
-        if (req.query.sort) {
-            const sortBy = req.query.sort.split(',').join(' ');
-            query = query.sort(sortBy);
-        }
-        else {
-            query = query.sort('-createdAt');
-        }
-        //Field limiting
-        if (req.query.fields) {
-            const fields = req.query.fields.split(',').join(' ');
-            query = query.select(fields);
-        }
-        else {
-            query = query.select('-__v');
-        }
-        //Pagiination
-        const page = +(req.query.page || 1);
-        const limit = +(req.query.limit || 100);
-        const skip = (page - 1) * limit;
-        query = query.skip(skip).limit(limit);
-        if (req.query.page) {
-            const numTours = yield tourModel_1.default.countDocuments();
-            if (skip >= numTours)
-                throw new Error('This page does not exist');
-        }
-        const tours = yield query;
+        const features = new apiFeatures_1.default(tourModel_1.default.find(), req)
+            .filter()
+            .sort()
+            .limitFields()
+            .paginate();
+        const tours = yield features.query;
         res
             .status(200)
             .json({ status: 'success', data: { tours }, results: tours.length });

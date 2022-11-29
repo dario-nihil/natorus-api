@@ -1,6 +1,23 @@
 import mongoose from 'mongoose';
 
-const tourSchema = new mongoose.Schema({
+interface ITour {
+  name: String;
+  duration: Number;
+  maxGroupSize: Number;
+  difficulty: String;
+  ratingsAverage: Number;
+  ratingsQuantity: Number;
+  price: Number;
+  priceDiscount: Number;
+  summary: String;
+  description: String;
+  imageCover: String;
+  images: [String];
+  createdAt: Date;
+  startDates: [Date];
+}
+
+const tourSchema = new mongoose.Schema<ITour>({
   name: {
     type: String,
     required: [true, 'A tour must have a name'],
@@ -24,7 +41,7 @@ const tourSchema = new mongoose.Schema({
     default: 4.5,
   },
   ratingsQuantity: {
-    type: String,
+    type: Number,
     default: 0,
   },
   price: {
@@ -54,6 +71,6 @@ const tourSchema = new mongoose.Schema({
   startDates: [Date],
 });
 
-const Tour = mongoose.model('Tour', tourSchema);
+const Tour = mongoose.model<ITour>('Tour', tourSchema);
 
 export default Tour;
