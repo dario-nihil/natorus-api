@@ -15,6 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getMonthlyPlan = exports.getTourStats = exports.deleteTour = exports.updateTour = exports.createTour = exports.getTour = exports.getAllTours = exports.aliasTopTours = void 0;
 const apiFeatures_1 = __importDefault(require("../utils/apiFeatures"));
 const tourModel_1 = __importDefault(require("../models/tourModel"));
+const catchAsync_1 = __importDefault(require("../utils/catchAsync"));
+const customError_1 = __importDefault(require("../utils/customError"));
 const aliasTopTours = (req, _res, next) => {
     req.query.limit = '5';
     req.query.sort = '-ratingsAverage,price';
@@ -22,132 +24,105 @@ const aliasTopTours = (req, _res, next) => {
     next();
 };
 exports.aliasTopTours = aliasTopTours;
-const getAllTours = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const features = new apiFeatures_1.default(tourModel_1.default.find(), req)
-            .filter()
-            .sort()
-            .limitFields()
-            .paginate();
-        const tours = yield features.query;
-        res
-            .status(200)
-            .json({ status: 'success', data: { tours }, results: tours.length });
+exports.getAllTours = (0, catchAsync_1.default)((req, res, _next) => __awaiter(void 0, void 0, void 0, function* () {
+    const features = new apiFeatures_1.default(tourModel_1.default.find(), req)
+        .filter()
+        .sort()
+        .limitFields()
+        .paginate();
+    const tours = yield features.query;
+    res
+        .status(200)
+        .json({ status: 'success', data: { tours }, results: tours.length });
+}));
+exports.getTour = (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const tour = yield tourModel_1.default.findById(req.params.id);
+    if (!tour) {
+        const error = new customError_1.default('No tour found with that ID');
+        error.statusCode = 404;
+        return next(error);
     }
-    catch (err) {
-        res.status(400).json({ status: 'fail', message: err });
+    res.status(200).json({ status: 'success', data: { tour } });
+}));
+exports.createTour = (0, catchAsync_1.default)((req, res, _next) => __awaiter(void 0, void 0, void 0, function* () {
+    const newTour = yield tourModel_1.default.create(req.body);
+    res.status(201).json({ status: 'success', data: { newTour } });
+}));
+exports.updateTour = (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const tour = yield tourModel_1.default.findByIdAndUpdate(req.params.id, req.body, {
+        new: true,
+        runValidators: true,
+    });
+    if (!tour) {
+        const error = new customError_1.default('No tour found with that ID');
+        error.statusCode = 404;
+        return next(error);
     }
-});
-exports.getAllTours = getAllTours;
-const getTour = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const tour = yield tourModel_1.default.findById(req.params.id);
-        res.status(200).json({ status: 'success', data: { tour } });
+    res.status(200).json({ status: 'success', data: { tour } });
+}));
+exports.deleteTour = (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const tour = yield tourModel_1.default.findByIdAndDelete(req.params.id);
+    if (!tour) {
+        const error = new customError_1.default('No tour found with that ID');
+        error.statusCode = 404;
+        return next(error);
     }
-    catch (err) {
-        res.status(400).json({ status: 'fail', message: err });
-    }
-});
-exports.getTour = getTour;
-const createTour = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const newTour = yield tourModel_1.default.create(req.body);
-        res.status(201).json({ status: 'success', data: { newTour } });
-    }
-    catch (err) {
-        res.status(400).json({ status: 'fail', message: err });
-    }
-});
-exports.createTour = createTour;
-const updateTour = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const tour = yield tourModel_1.default.findByIdAndUpdate(req.params.id, req.body, {
-            new: true,
-            runValidators: true,
-        });
-        res.status(200).json({ status: 'success', data: { tour } });
-    }
-    catch (err) {
-        res.status(400).json({ status: 'fail', message: err });
-    }
-});
-exports.updateTour = updateTour;
-const deleteTour = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        yield tourModel_1.default.findByIdAndDelete(req.params.id);
-        res.status(204).json({ status: 'success' });
-    }
-    catch (err) {
-        res.status(400).json({ status: 'fail', message: err });
-    }
-});
-exports.deleteTour = deleteTour;
-const getTourStats = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const stats = yield tourModel_1.default.aggregate([
-            {
-                $match: { ratingsAverage: { $gte: 4.5 } },
+    res.status(204).json({ status: 'success' });
+}));
+exports.getTourStats = (0, catchAsync_1.default)((_req, res, _next) => __awaiter(void 0, void 0, void 0, function* () {
+    const stats = yield tourModel_1.default.aggregate([
+        {
+            $match: { ratingsAverage: { $gte: 4.5 } },
+        },
+        {
+            $group: {
+                _id: { $toUpper: '$difficulty' },
+                numTours: { $sum: 1 },
+                numRatings: { $sum: '$ratingsQuantity' },
+                avgRating: { $avg: '$ratingsAverage' },
+                avgPrice: { $avg: '$price' },
+                minPrice: { $min: '$price' },
+                maxPrice: { $max: '$price' },
             },
-            {
-                $group: {
-                    _id: { $toUpper: '$difficulty' },
-                    numTours: { $sum: 1 },
-                    numRatings: { $sum: '$ratingsQuantity' },
-                    avgRating: { $avg: '$ratingsAverage' },
-                    avgPrice: { $avg: '$price' },
-                    minPrice: { $min: '$price' },
-                    maxPrice: { $max: '$price' },
+        },
+        {
+            $sort: { avgPrice: 1 },
+        },
+    ]);
+    res.status(200).json({ status: 'success', data: { stats } });
+}));
+exports.getMonthlyPlan = (0, catchAsync_1.default)((req, res, _next) => __awaiter(void 0, void 0, void 0, function* () {
+    const year = +req.params.year;
+    const plan = yield tourModel_1.default.aggregate([
+        {
+            $unwind: '$startDates',
+        },
+        {
+            $match: {
+                startDates: {
+                    $gte: new Date(`${year}-01-01`),
+                    $lte: new Date(`${year}-12-31`),
                 },
             },
-            {
-                $sort: { avgPrice: 1 },
+        },
+        {
+            $group: {
+                _id: { $month: '$startDates' },
+                numTourStarts: { $sum: 1 },
+                tours: { $push: '$name' },
             },
-        ]);
-        res.status(200).json({ status: 'success', data: { stats } });
-    }
-    catch (err) {
-        res.status(400).json({ status: 'fail', message: err });
-    }
-});
-exports.getTourStats = getTourStats;
-const getMonthlyPlan = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const year = +req.params.year;
-        const plan = yield tourModel_1.default.aggregate([
-            {
-                $unwind: '$startDates',
+        },
+        {
+            $addFields: { month: '$_id' },
+        },
+        {
+            $project: {
+                _id: 0,
             },
-            {
-                $match: {
-                    startDates: {
-                        $gte: new Date(`${year}-01-01`),
-                        $lte: new Date(`${year}-12-31`),
-                    },
-                },
-            },
-            {
-                $group: {
-                    _id: { $month: '$startDates' },
-                    numTourStarts: { $sum: 1 },
-                    tours: { $push: '$name' },
-                },
-            },
-            {
-                $addFields: { month: '$_id' },
-            },
-            {
-                $project: {
-                    _id: 0,
-                },
-            },
-            {
-                $sort: { numTourStarts: -1 },
-            },
-        ]);
-        res.status(200).json({ status: 'success', data: { plan } });
-    }
-    catch (err) {
-        res.status(400).json({ status: 'fail', message: err });
-    }
-});
-exports.getMonthlyPlan = getMonthlyPlan;
+        },
+        {
+            $sort: { numTourStarts: -1 },
+        },
+    ]);
+    res.status(200).json({ status: 'success', data: { plan } });
+}));
