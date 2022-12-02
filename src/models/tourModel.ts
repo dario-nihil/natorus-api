@@ -1,6 +1,5 @@
 import mongoose from 'mongoose';
 import slusgify from 'slugify';
-import validator from 'validator';
 
 interface ITour {
   name: String;
@@ -129,6 +128,4 @@ tourSchema.virtual('durationWeeks').get(function () {
   return +this.duration / 7;
 });
 
-const Tour = mongoose.model<ITour>('Tour', tourSchema);
-
-export default Tour;
+export default mongoose.model<ITour>('Tour', tourSchema);

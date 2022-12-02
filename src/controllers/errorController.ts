@@ -56,11 +56,8 @@ export default (
   res: Response,
   _next: NextFunction
 ) => {
-  console.log('inside error middleware');
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'Error';
-
-  const env = process.env.NODE_ENV;
 
   if (process.env.NODE_ENV === 'development') {
     sendErrorDev(res, err);

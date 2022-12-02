@@ -1,9 +1,6 @@
 import path from 'path';
-import fs from 'fs';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-
-import Tour from './models/tourModel';
 
 dotenv.config({ path: path.join(__dirname, '..', 'config.env') });
 

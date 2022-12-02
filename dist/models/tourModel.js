@@ -104,5 +104,4 @@ tourSchema.pre('aggregate', function (next) {
 tourSchema.virtual('durationWeeks').get(function () {
     return +this.duration / 7;
 });
-const Tour = mongoose_1.default.model('Tour', tourSchema);
-exports.default = Tour;
+exports.default = mongoose_1.default.model('Tour', tourSchema);
