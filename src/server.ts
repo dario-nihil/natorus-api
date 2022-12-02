@@ -10,7 +10,7 @@ process.on('uncaughtException', (err: Error) => {
 });
 
 import dotenv from 'dotenv';
-dotenv.config({ path: path.join(__dirname, '..', 'config.env') });
+dotenv.config({ path: path.join(__dirname, '..', '/vars', 'config.env') });
 import app from './app';
 
 const DB = process.env.DATABASE!.replace(

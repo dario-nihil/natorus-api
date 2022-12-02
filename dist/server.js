@@ -12,7 +12,7 @@ process.on('uncaughtException', (err) => {
     process.exit(1);
 });
 const dotenv_1 = __importDefault(require("dotenv"));
-dotenv_1.default.config({ path: path_1.default.join(__dirname, '..', 'config.env') });
+dotenv_1.default.config({ path: path_1.default.join(__dirname, '..', '/vars', 'config.env') });
 const app_1 = __importDefault(require("./app"));
 const DB = process.env.DATABASE.replace('<PASSWORD>', process.env.DATABASE_PASSWORD);
 mongoose_1.default.connect(DB).then(() => console.log('DB connected!'));
