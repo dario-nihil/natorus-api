@@ -16,6 +16,10 @@ if (process.env.NODE_ENV === 'development') {
 }
 app.use(express_1.default.json());
 app.use(express_1.default.static(path_1.default.join(__dirname, '..', 'public')));
+app.use((req, res, next) => {
+    req.requestTime = new Date().toISOString();
+    next();
+});
 app.use('/api/v1/tours', tourRoutes_1.default);
 app.use('/api/v1/users', userRoutes_1.default);
 app.all('*', (req, _res, next) => {

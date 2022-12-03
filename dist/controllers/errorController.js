@@ -10,7 +10,7 @@ const handleCastErrorDB = (err) => {
     error.statusCode = 400;
     return error;
 };
-const handleDuplicateFieldsDB = (err, msg) => {
+const handleDuplicateFieldsDB = (msg) => {
     const value = msg.match(/(["'])(\\?.)*?\1/)[0];
     const message = `Duplicate field value ${value}. Please use another value!`;
     const error = new customError_1.default(message);
@@ -22,6 +22,21 @@ const handleValidationErrorDB = (err) => {
     const message = `Invalid input data. ${errors.join('. ')}`;
     const error = new customError_1.default(message);
     error.statusCode = 400;
+    return error;
+};
+const handleJwtError = () => {
+    const error = new customError_1.default('Invalid token. Please log in again');
+    error.statusCode = 401;
+    return error;
+};
+const handleJwtExpiredError = () => {
+    const error = new customError_1.default('Your token has expired! Please log in again.');
+    error.statusCode = 401;
+    return error;
+};
+const handleInvalidTokenError = (msg) => {
+    const error = new customError_1.default(msg);
+    error.statusCode = 401;
     return error;
 };
 const sendErrorProd = (res, err) => {
@@ -58,8 +73,14 @@ exports.default = (err, _req, res, _next) => {
             error = handleCastErrorDB(error);
         if (proto.name === 'ValidationError')
             error = handleValidationErrorDB(error);
+        if (error.name === 'JsonWebTokenError')
+            error = handleJwtError();
+        if (error.name === 'TokenExpiredError')
+            error = handleJwtExpiredError();
         if (error.code === 11000)
-            error = handleDuplicateFieldsDB(error, err.message);
+            error = handleDuplicateFieldsDB(err.message);
+        if (err.statusCode === 498)
+            error = handleInvalidTokenError(err.message);
         sendErrorProd(res, error);
     }
 };
