@@ -1,11 +1,10 @@
 import { promisify } from 'util';
 import { Request, Response, NextFunction } from 'express';
-import jwt, { Jwt, JwtPayload, Secret, VerifyOptions } from 'jsonwebtoken';
+import jwt, { JwtPayload } from 'jsonwebtoken';
 
 import catchAsync from '../utils/catchAsync';
 import User, { IUser } from '../models/userModel';
 import CustomError from '../utils/customError';
-import { decode } from 'punycode';
 
 const signToken = (id: object) =>
   jwt.sign({ id }, process.env.JWT_SECRET!, {
@@ -20,6 +19,7 @@ export const signup = catchAsync(
       password: req.body.password,
       confirmPassword: req.body.confirmPassword,
       passwordChangedAt: req.body.passwordChangedAt,
+      role: req.body.role,
     });
 
     const token = signToken(newUser._id);
@@ -112,3 +112,18 @@ export const protect = catchAsync(
     next();
   }
 );
+
+export const restrictTo =
+  (...roles: string[]) =>
+  (req: Request, res: Response, next: NextFunction) => {
+    if (!roles.includes(req.user.role as string)) {
+      const error = new CustomError(
+        'You do not have permission to perform this action'
+      );
+      error.statusCode = 403;
+
+      next(error);
+    }
+
+    next();
+  };

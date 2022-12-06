@@ -7,6 +7,7 @@ export interface IUser {
   name: String;
   email: String;
   photo: String;
+  role: String;
   password: String;
   confirmPassword: String | undefined;
   passwordChangedAt: Date;
@@ -27,6 +28,11 @@ const userSchema = new mongoose.Schema<IUser>({
     validate: [validator.isEmail, 'Please provide a valid email'],
   },
   photo: String,
+  role: {
+    type: String,
+    enum: ['user', 'guide', 'lead-guide', 'admin'],
+    default: 'user',
+  },
   password: {
     type: String,
     requied: [true, 'Please provide a password'],

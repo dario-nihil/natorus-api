@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.protect = exports.login = exports.signup = void 0;
+exports.restrictTo = exports.protect = exports.login = exports.signup = void 0;
 const util_1 = require("util");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const catchAsync_1 = __importDefault(require("../utils/catchAsync"));
@@ -28,6 +28,7 @@ exports.signup = (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0,
         password: req.body.password,
         confirmPassword: req.body.confirmPassword,
         passwordChangedAt: req.body.passwordChangedAt,
+        role: req.body.role,
     });
     const token = signToken(newUser._id);
     res.status(201).json({
@@ -69,17 +70,26 @@ exports.protect = (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0
         return next(error);
     }
     const decoded = yield (0, util_1.promisify)(jsonwebtoken_1.default.verify)(token, process.env.JWT_SECRET);
-    const freshUser = yield userModel_1.default.findById(decoded.id);
-    if (!freshUser) {
+    const currenthUser = yield userModel_1.default.findById(decoded.id);
+    if (!currenthUser) {
         const error = new customError_1.default('The user belonging to this token no longer exists.');
         error.statusCode = 401;
         return next(error);
     }
-    if (freshUser.changePasswordAfter(decoded.iat)) {
+    if (currenthUser.changePasswordAfter(decoded.iat)) {
         const error = new customError_1.default('User recently changed password! Please log in again.');
         error.statusCode = 498;
         return next(error);
     }
-    req.user = freshUser;
+    req.user = currenthUser;
     next();
 }));
+const restrictTo = (...roles) => (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+        const error = new customError_1.default('You do not have permission to perform this action');
+        error.statusCode = 403;
+        next(error);
+    }
+    next();
+};
+exports.restrictTo = restrictTo;
