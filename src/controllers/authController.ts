@@ -1,10 +1,12 @@
 import { promisify } from 'util';
-import { Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 import jwt, { JwtPayload } from 'jsonwebtoken';
 
 import catchAsync from '../utils/catchAsync';
 import User, { IUser } from '../models/userModel';
 import CustomError from '../utils/customError';
+import sendEmail from '../utils/email';
 
 const signToken = (id: object) =>
   jwt.sign({ id }, process.env.JWT_SECRET!, {
@@ -127,3 +129,83 @@ export const restrictTo =
 
     next();
   };
+
+export const forgotPassword: RequestHandler = catchAsync(
+  async (req, res, next) => {
+    const user = await User.findOne({ email: req.body.email });
+
+    if (!user) {
+      const error = new CustomError('There is no user with that email address');
+      error.statusCode = 404;
+
+      next(error);
+    }
+
+    const resetToken = user!.createPasswordResetToken();
+    await user!.save({ validateBeforeSave: false });
+
+    const resetUrl = `${req.protocol}://${req.get(
+      'host'
+    )}/api/v1/users/ressetPassword/${resetToken}`;
+
+    const message = `Forgot your password? Submit a PATH request with your new password and passwordConfirm to: ${resetUrl}.\nIf you didn't forgot your password, please ignore this email!`;
+
+    try {
+      await sendEmail({
+        email: user!.email as string,
+        subject: 'Your password reset token (valid for 10 min)',
+        message,
+      });
+
+      res
+        .status(200)
+        .json({ status: 'success', message: 'Token send to email' });
+    } catch (err) {
+      user!.passwordResetToken = undefined;
+      user!.passwordResetExpiration = undefined;
+      await user!.save({ validateBeforeSave: false });
+
+      const error = new CustomError(
+        'There was an error sending the email. Try again later!'
+      );
+      error.statusCode = 500;
+
+      return next(error);
+    }
+  }
+);
+
+export const resetPassword: RequestHandler = catchAsync(
+  async (req, res, next) => {
+    // 1) Get user based on the token
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(req.params.token)
+      .digest('hex');
+
+    const user = await User.findOne({
+      passwordResetToken: hashedToken,
+      passwordResetExpiration: { $gt: Date.now() },
+    });
+    // 2) If token has not expired, and there is user, set the new password
+    if (!user) {
+      const error = new CustomError('Token is invalid or has expired');
+      error.statusCode = 400;
+
+      return next(error);
+    }
+
+    user.password = req.body.password;
+    user.confirmPassword = req.body.confirmPassword;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpiration = undefined;
+
+    await user.save();
+    // 3) Update changedPasswordAt property for the user
+    // 4) Log the user in, send JWT
+
+    const token = signToken(user._id);
+
+    res.status(201).json({ status: 'success', token });
+  }
+);

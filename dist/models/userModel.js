@@ -12,6 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const crypto_1 = __importDefault(require("crypto"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const validator_1 = __importDefault(require("validator"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
@@ -50,6 +51,8 @@ const userSchema = new mongoose_1.default.Schema({
         },
     },
     passwordChangedAt: Date,
+    passwordResetToken: String,
+    passwordResetExpiration: Date,
 });
 userSchema.pre('save', function (next) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -59,6 +62,12 @@ userSchema.pre('save', function (next) {
         this.confirmPassword = undefined;
         next();
     });
+});
+userSchema.pre('save', function (next) {
+    if (!this.isModified('password') || this.isNew)
+        return next();
+    this.passwordChangedAt = new Date(Date.now() - 1000);
+    next();
 });
 // Instance methods
 userSchema.methods.correctPassword = function (candidatePassword, userPassword) {
@@ -73,5 +82,15 @@ userSchema.methods.changePasswordAfter = function (JWTTimestamp) {
         return JWTTimestamp < changedTimestamp;
     }
     return false;
+};
+userSchema.methods.createPasswordResetToken = function () {
+    const resetToken = crypto_1.default.randomBytes(32).toString('hex');
+    this.passwordResetToken = crypto_1.default
+        .createHash('sha256')
+        .update(resetToken)
+        .digest('hex');
+    console.log({ resetToken }, this.passwordResetToken);
+    this.passwordResetExpiration = Date.now() + 10 * 60 * 1000;
+    return resetToken;
 };
 exports.default = mongoose_1.default.model('User', userSchema);
