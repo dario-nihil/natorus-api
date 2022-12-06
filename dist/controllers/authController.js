@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resetPassword = exports.forgotPassword = exports.restrictTo = exports.protect = exports.login = exports.signup = void 0;
+exports.updatePassword = exports.resetPassword = exports.forgotPassword = exports.restrictTo = exports.protect = exports.login = exports.signup = void 0;
 const util_1 = require("util");
 const crypto_1 = __importDefault(require("crypto"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
@@ -23,6 +23,16 @@ const email_1 = __importDefault(require("../utils/email"));
 const signToken = (id) => jsonwebtoken_1.default.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN,
 });
+const createSendToken = (user, statusCode, res) => {
+    const token = signToken(user._id);
+    res.status(statusCode).json({
+        status: 'success',
+        token,
+        data: {
+            user: user,
+        },
+    });
+};
 exports.signup = (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const newUser = yield userModel_1.default.create({
         name: req.body.name,
@@ -32,14 +42,7 @@ exports.signup = (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0,
         passwordChangedAt: req.body.passwordChangedAt,
         role: req.body.role,
     });
-    const token = signToken(newUser._id);
-    res.status(201).json({
-        status: 'success',
-        token,
-        data: {
-            user: newUser,
-        },
-    });
+    createSendToken(newUser, 201, res);
 }));
 exports.login = (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, password } = req.body;
@@ -56,8 +59,7 @@ exports.login = (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, 
         error.statusCode = 401;
         return next(error);
     }
-    const token = signToken(user._id);
-    res.status(200).json({ status: 'success', token });
+    createSendToken(user, 200, res);
 }));
 exports.protect = (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
@@ -148,6 +150,26 @@ exports.resetPassword = (0, catchAsync_1.default)((req, res, next) => __awaiter(
     yield user.save();
     // 3) Update changedPasswordAt property for the user
     // 4) Log the user in, send JWT
-    const token = signToken(user._id);
-    res.status(201).json({ status: 'success', token });
+    createSendToken(user, 201, res);
+}));
+exports.updatePassword = (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    // 1) Get user from coòòection
+    const user = yield userModel_1.default.findById(req.user._id).select('+password');
+    if (!user) {
+        const error = new customError_1.default('Unable to find user.');
+        error.statusCode = 500;
+        return next(error);
+    }
+    // 2) Check if POSTed current password is correct
+    if (!(yield user.correctPassword(req.body.passwordCurrent, user.password))) {
+        const error = new customError_1.default('Your current password is wrong.');
+        error.statusCode = 401;
+        return next(error);
+    }
+    // 3) If so, update password
+    user.password = req.body.password;
+    user.confirmPassword = req.body.passwordConfirm;
+    yield user.save();
+    // 4) Log user in, send JWT
+    createSendToken(user, 201, res);
 }));
