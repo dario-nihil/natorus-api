@@ -9,7 +9,7 @@ export interface IUser {
   email: String;
   photo: String;
   role: String;
-  password: String;
+  password: String | undefined;
   confirmPassword: String | undefined;
   passwordChangedAt: Date;
   passwordResetToken: String | undefined;

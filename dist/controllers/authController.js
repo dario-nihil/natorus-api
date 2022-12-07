@@ -25,6 +25,17 @@ const signToken = (id) => jsonwebtoken_1.default.sign({ id }, process.env.JWT_SE
 });
 const createSendToken = (user, statusCode, res) => {
     const token = signToken(user._id);
+    const cookieOptions = {
+        expires: new Date(Date.now() +
+            parseInt(process.env.JWT_COOKIE_EXPIRES_IN) * 24 * 60 * 60 * 1000),
+        secure: false,
+        httpOnly: true,
+    };
+    if (process.env.NODE_ENV === 'production')
+        cookieOptions.secure = true;
+    res.cookie('jwt', token, cookieOptions);
+    // Remove the password from the output
+    user.password = undefined;
     res.status(statusCode).json({
         status: 'success',
         token,
@@ -46,7 +57,6 @@ exports.signup = (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0,
 }));
 exports.login = (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, password } = req.body;
-    const error = new Error();
     if (!email || !password) {
         const error = new customError_1.default('Please provide email and password');
         error.statusCode = 400;
